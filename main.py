@@ -12,6 +12,15 @@ def browse_file():
     )
     csv_file_var.set(file_path)
 
+# Function to replace placeholders dynamically based on column names
+def replace_placeholders(message_template, row):
+    # Loop through each column in the CSV row
+    for column in row.index:
+        placeholder = f"{{{column}}}"  # Placeholder like {parentname}, {childname}, etc.
+        # Replace placeholders with the string representation of the value
+        message_template = message_template.replace(placeholder, str(row[column]))
+    return message_template
+
 # Function to send WhatsApp messages
 def send_messages():
     try:
@@ -20,7 +29,7 @@ def send_messages():
         if not file_path:
             messagebox.showerror("Error", "Please select a CSV file")
             return
-        
+
         df = pd.read_csv(file_path)
 
         # Get the custom message from the text box
@@ -32,10 +41,9 @@ def send_messages():
         # Loop through each row in the DataFrame
         for index, row in df.iterrows():
             phone_number = row['phonenumber']
-            name = row['name']
 
-            # Customize the message by replacing {name} with the actual name from the CSV
-            message = custom_message.replace("{name}", name)
+            # Replace placeholders with actual values from the row
+            message = replace_placeholders(custom_message, row)
 
             # Specify the time to send the message
             pywhatkit.sendwhatmsg(phone_number, message, int(hour_var.get()), int(minute_var.get()))
@@ -69,12 +77,12 @@ minute_var = tk.StringVar(value="30")
 tk.Entry(root, textvariable=minute_var, width=10).grid(row=2, column=1, padx=10, pady=10)
 
 # Message customization box
-tk.Label(root, text="Custom Message (use {name} for recipient's name):").grid(row=3, column=0, padx=10, pady=10)
+tk.Label(root, text="Custom Message (use {column_name} for placeholders):").grid(row=3, column=0, padx=10, pady=10)
 message_box = tk.Text(root, height=5, width=40)
 message_box.grid(row=3, column=1, padx=10, pady=10)
 
 # Default message example
-message_box.insert("1.0", "Hello {name}, this is a custom message from [Your Company]!")
+message_box.insert("1.0", "Hello {parentname}, this is a reminder about the event {eventname} for your child {childname}.")
 
 # Send button
 tk.Button(root, text="Send Messages", command=send_messages).grid(row=4, column=1, padx=10, pady=20)
